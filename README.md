@@ -3,17 +3,23 @@ CacheInvalidationTester
 
 Tool to Test Cache Invalidation scenarios in browsers
 
-Currently Status:
+#Currently Status:
 
-Test 0 Results:
-Passes:
-Chrome
-Firefox
-Safari
+##Test 0 Results:
 
-Test 1 Results:
-Passes:
-Firefox
-Fails:
-Chrome
-Safari
+###Passing
+
+    Chrome
+    Firefox
+    Safari
+
+##Test 1 Results:
+
+###Passing
+
+    Firefox
+
+###Failing
+  
+    Chrome
+    Safari
