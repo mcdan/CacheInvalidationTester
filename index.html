@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Test Cache Invalidation</title>
+	<script type="text/javascript" src="js/jquery.js"></script>
+	<script type="text/javascript">
+		function doGet(url, i) {
+			return $.ajax({
+				url: url,
+				headers: {"X-seq": i}
+			});
+		}
+		function doPost(url) {
+			return $.ajax({
+				type: "POST",
+				url: url,
+				data: {"one": 2, "two": 4, "three": 6}
+			});
+		}
+
+		function test0(){
+			var seq = 1;
+			var ol = $("<ol/>");
+			$("#test0Results").empty().append(ol);
+			doGet("data.json", seq).done(function(data, status, xhr){
+					ol.append("<li>Done First Get with Seq: " + xhr.getResponseHeader("X-seq") + "</li>");
+/*
+The second request should come from cache, so set the seq to whatever 
+we just got, just in case the first one came from cache.  But pass
+an incremented sequence number to the GET request
+*/
+					seq = +xhr.getResponseHeader("X-seq");
+					doGet("data.json",(seq+1)).done(function(data, status, xhr){
+/*
+	The second request should come from cache, the X-seq should match 
+	the prior request.
+*/						
+						if (xhr.getResponseHeader("X-seq") !== seq.toString()){
+							ol.append("<li>FAILED! with Seq: " + xhr.getResponseHeader("X-seq") + "</li>");
+						} else{
+							ol.append("<li>SUCCESS: Done Second GET with Seq: " + xhr.getResponseHeader("X-seq") + "</li>");
+						}
+					})
+				});
+		}
+
+		function test1(){
+			var seq = 1;
+			$("#test1Results").empty();
+			var ol = $("<ol/>");
+			$("#test1Results").append(ol);
+			doGet("data.json", seq).done(function(data, status, xhr){
+					ol.append("<li>Done First Get with Seq: " + xhr.getResponseHeader("X-seq") + "</li>");
+					doPost("data.json").done(function(data, status, xhr){
+						ol.append("<li>Done Post</li>");
+						seq += 1;
+						doGet("data.json",seq).done(function(data, status, xhr){
+/*
+A request after a post should NEVER come from cache, therefore our 
+sequence number should match the one we passed in.
+*/							
+							if (xhr.getResponseHeader("X-seq") !== seq.toString()){
+								ol.append("<li>FAILED! with Seq: " + xhr.getResponseHeader("X-seq") + "</li>");
+							} else{
+								ol.append("<li>SUCCESS: Done Second GET with Seq: " + xhr.getResponseHeader("X-seq") + "</li>");
+
+							}
+						});
+					})
+				});
+		}
+
+
+	</script>
+</head>
+
+<body>
+	<ol>
+		<li><a href="#" onclick="event.preventDefault();test0()">Test 0 - GET then GET, second from cache</a>
+			<div id="test0Results">
+			</div>
+		</li>
+
+		<li><a href="#" onclick="event.preventDefault();test1()">Test 1 - GET, POST, GET - second GET from Server</a>
+			<div id="test1Results">
+			</div>
+		</li>
+	</ol>
+
+</body>
+</html>
