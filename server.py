@@ -4,19 +4,16 @@ from SimpleHTTPServer import SimpleHTTPRequestHandler
 import time
 from datetime import timedelta
 class SimpleHandler(SimpleHTTPRequestHandler, object):
+	lastModified = ""
 	def do_GET(self):
+		if SimpleHandler.lastModified == "":
+			SimpleHandler.lastModified = self.date_time_string(time.time())
 		if "data.json" in self.path:
 			json = "{\"one\": 1, \"two\": 2, \"three\": 3}"
 			self.send_response(200)
 			self.send_header("Content-length", len(json))
 			self.send_header("Content-type", "application/json")
-			# If the last modified time is equal to the current time,
-			# the browser has a hard time creating a cache expiration
-			# so set the time of last modification to be "a little 
-			# while ago"
-			self.send_header("Last-Modified", self.date_time_string(time.time() - 1000))
-			if "?" in self.path:
-				self.send_header("Cache-Control", "no-cache")
+			self.send_header("Last-Modified", SimpleHandler.lastModified)
 			for header in self.headers:
 				if "x-seq" in header:
 					self.send_header(header, self.headers[header])
@@ -25,10 +22,14 @@ class SimpleHandler(SimpleHTTPRequestHandler, object):
 		else:
 			super(SimpleHandler, self).do_GET()
 	def do_POST(self):
+		resp = "{\"status\":200}"
 		self.send_response(200)
+		SimpleHandler.lastModified = self.date_time_string(time.time())
+		self.send_header("Last-Modified", SimpleHandler.lastModified)
+		self.send_header("Content-length", len(resp))
 		self.send_header("Content-type", "application/json")
 		self.end_headers()
-		self.wfile.write("{\"status\":200}")
+		self.wfile.write(resp)
 
 
 HandlerClass = SimpleHTTPRequestHandler
